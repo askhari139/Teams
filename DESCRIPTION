@@ -2,9 +2,9 @@ Package: Teams
 Title: Perform teams related analysis
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+    person("Kishore", "Hari", , "kishorehari@iisc.ac.in", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Code used to perform the analysis and generate the figures in the paper: https://www.biorxiv.org/content/10.1101/2021.12.12.472090v1.full
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
@@ -15,4 +15,6 @@ Imports:
     tidyr,
     magrittr,
     ggplot2,
-    compiler
+    compiler,
+    readr,
+    dplyr

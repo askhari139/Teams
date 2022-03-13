@@ -76,7 +76,7 @@ Passive outputs :
 
 function bmodel_reps(topoFile::String; nInit::Int64=10000, nIter::Int64=1000,
     mode::String="Async", stateRep::Int64=-1, reps::Int = 3, csv::Bool=false, 
-    types::Array{Int, 1} = [0,1,2],init::Bool=false, randSim::Bool=false, root::String="", 
+    types::Array{Int, 1} = [0],init::Bool=false, randSim::Bool=false, root::String="", 
     randVec::Array{Float64,1}=[0.0])
     update_matrix,Nodes = topo2interaction(topoFile)
     if length(Nodes)>60
