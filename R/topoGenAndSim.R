@@ -49,7 +49,7 @@ RandomNetworks <- function(numRand = 500, nSwap = 10) {
     setwd(topoFileFolder)
     topoFiles <- list.files(".", pattern = ".topo")
     topoDf <- lapply(topoFiles, read.delim, sep = " ") %>% set_names(topoFiles)
-    
+
     for (topoFile in topoFiles){
         net <- str_remove(topoFile, ".topo")
         df <- topoDf[[topoFile]]
@@ -83,7 +83,7 @@ EdgeDeletion <- function() {
     setwd(topoFileFolder)
     topoFiles <- list.files(".", pattern = ".topo")
     topoDf <- lapply(topoFiles, read.delim, sep = " ") %>% set_names(topoFiles)
-    
+
     for (topoFile in topoFiles) {
         net <- str_remove(topoFile, ".topo")
         df <- topoDf[[topoFile]]
@@ -94,11 +94,11 @@ EdgeDeletion <- function() {
         sapply(1:nrow(df), function(x) {
             write_delim(df, "wild.topo", delim = " ", quote = "none")
             dfNew <- df[-x, ]
-            nam <- paste0(net, df$Source[x], "_", df$Target[x], "_del.topo")
+            nam <- paste0(net, "_",df$Source[x], "_", df$Target[x], "_del.topo")
             write_delim(dfNew, nam, delim = " ", quote = "none")
             dfNew <- df
             dfNew$Type[x] <- ifelse(dfNew$Type[x] == 1, 2, 1)
-            nam <- paste0(net, df$Source[x], "_", df$Target[x], "_change.topo")
+            nam <- paste0(net, "_",df$Source[x], "_", df$Target[x], "_change.topo")
             write_delim(dfNew, nam, delim = " ", quote = "none")
         })
     }
@@ -110,17 +110,17 @@ SimulateBoolean <- function(rand = T, edge = T) {
         setwd(randRaw)
         sapply(netList, function(net) {
             setwd(net)
-            file.copy(paste0(simPackage, "/script.jl"), ".")
+            file.copy(paste0(simPackage, "/script.jl"), ".", overwrite = T)
             julia_source("script.jl")
             setwd("..")
         })
     }
-    
+
     if(edge) {
         setwd(edgeDel)
         sapply(netList, function(net) {
             setwd(net)
-            file.copy(paste0(simPackage, "/script.jl"), ".")
+            file.copy(paste0(simPackage, "/script.jl"), ".", overwrite = T)
             julia_source("script.jl")
             setwd("..")
         })

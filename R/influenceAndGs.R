@@ -43,7 +43,7 @@ compute_power_matrix <- function(mat, power) {
 }
 compute_power_matrix <- cmpfun(compute_power_matrix)
 
-influence_matrix <- function(intmat, nodes, lmax = 10, write = T) {
+influence_matrix <- function(net, intmat, nodes, lmax = 10, write = T) {
     intmax <- intmat
     intmax[which(intmax == -1)] <- 1
     res <- 0
@@ -91,7 +91,11 @@ influence_matrix <- function(intmat, nodes, lmax = 10, write = T) {
     rownames(influence_reduced) <- colnames(influence_reduced) <- nodes_reduced
     if (write)
     {
-        
+        if(!dir.exists("Influence"))
+            dir.create("Influence")
+        setwd("Influence")
+        write.csv(influence_mat, paste0("Influence/", net, "_fullInfl.csv"))
+        write.csv(influence_reduced, paste0("Influence/", net, "_reducedInfl.csv"))
     }
     influence_reduced
 }
