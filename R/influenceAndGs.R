@@ -1,12 +1,6 @@
-topo_to_int_mat <- function(topo_file, plotOut = F, nOrder = NULL) {
-  df <- read.delim(topo_file, sep = " ", stringsAsFactors = F)
-  if (ncol(df) != 3) {
-    df <- read.delim(topo_file, stringsAsFactors = F)
-  }
-  colnames(df) <- c("Source", "Target", "Type")
+TopoToIntMat <- function(topoFile, plotOut = F, nOrder = NULL) {
+  df <- read.delim(topoFile, sep = " ", stringsAsFactors = F)
   df <- df %>%
-    mutate(Source = str_remove_all(Source, "\\s")) %>%
-    mutate(Target = str_remove_all(Target, "\\s")) %>%
     mutate(Type = ifelse(Type == 2, -1, 1))
 
   nodes <- unique(c(df$Source, df$Target)) %>%
@@ -31,7 +25,7 @@ topo_to_int_mat <- function(topo_file, plotOut = F, nOrder = NULL) {
   })
   if (plotOut) {
       if(is.null(nOrder)) {
-          nOrder <- nodes
+          nOrder <- getEMSONodes(topoFile)
       }
       df <- data.frame(intmat) %>%
           set_names(nodes) %>%
@@ -44,14 +38,16 @@ topo_to_int_mat <- function(topo_file, plotOut = F, nOrder = NULL) {
           theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
                 axis.text.x = element_text(angle = 90), legend.position = "right",
                 legend.direction = "vertical", legend.key.height = unit(0.5, "in"))
-      ggsave(paste0("Influence/", str_replace(topoFile, ".topo", "_interaction.png")),
+      directoryNav("MatrixPlots")
+      ggsave(paste0(str_replace(topoFile, ".topo", "_interaction.png")),
              width = 7, height = 6)
+      setwd("..")
 
   }
   return(list(intmat, nodes))
 }
 
-compute_power_matrix <- function(mat, power) {
+ComputePowerMatrix <- function(mat, power) {
   res <- mat
   if (power == 1) {
     return(res)
@@ -61,15 +57,15 @@ compute_power_matrix <- function(mat, power) {
   }
   return(res)
 }
-compute_power_matrix <- cmpfun(compute_power_matrix)
+ComputePowerMatrix <- cmpfun(ComputePowerMatrix)
 
-influence_matrix <- function(net, intmat, nodes, lmax = 10, write = T) {
+InfluenceMatrix <- function(net, intmat, nodes, lmax = 10, write = T) {
   intmax <- intmat
   intmax[which(intmax == -1)] <- 1
   res <- 0
   for (l in 1:lmax) {
-    intM <- compute_power_matrix(intmat, l)
-    maxM <- compute_power_matrix(intmax, l)
+    intM <- ComputePowerMatrix(intmat, l)
+    maxM <- ComputePowerMatrix(intmax, l)
     r1 <- intM / maxM
     r1[is.nan(r1)] <- intM[is.nan(r1)]
     res <- res + r1
@@ -118,25 +114,23 @@ influence_matrix <- function(net, intmat, nodes, lmax = 10, write = T) {
   }
   rownames(influence_reduced) <- colnames(influence_reduced) <- nodes_reduced
   if (write) {
-    if (!dir.exists("Influence")) {
-      dir.create("Influence")
-    }
-    setwd("Influence")
-    write.csv(influence_mat, paste0("Influence/", net, "_fullInfl.csv"))
-    write.csv(influence_reduced, paste0("Influence/", net, "_reducedInfl.csv"))
+    directoryNav("Influence")
+    write.csv(influence_mat, paste0(net, "_fullInfl.csv"))
+    write.csv(influence_reduced, paste0(net, "_reducedInfl.csv"))
+    setwd("..")
   }
   influence_reduced
 }
-influence_matrix <- cmpfun(influence_matrix)
+InfluenceMatrix <- cmpfun(InfluenceMatrix)
 
 
-groupStrength <- function(topoFile, pathLength = 10, plotOut = F) {
+GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F) {
   ls <- topo_to_int_mat(topoFile)
   intmat <- ls[[1]]
   nodes <- ls[[2]]
 
 
-  inflMat <- influence_matrix(intmat, nodes, pathLength)
+  inflMat <- InfluenceMatrix(intmat, nodes, pathLength)
 
   nodes <- rownames(inflMat)
   df <- inflMat
@@ -154,6 +148,15 @@ groupStrength <- function(topoFile, pathLength = 10, plotOut = F) {
     g2 <- g0
   }
   nOrder <- c(g1, g2)
+  if (getTeams) {
+    l <- list(g1, g2)
+    mirdetect <- c(sum(str_detect(g1 %>% str_to_upper, "MIR")),
+                   sum(str_detect(g2 %>% str_to_upper, "MIR")))
+    egroup <- which.max(mirdetect)
+    mgroup <- ifelse(egroup == 1, 2, 1)
+    names(l)[c(egroup, mgroup)] <- c("E", "M")
+    return(l)
+  }
   df2 <- data.frame(df) %>%
     mutate(nodes1 = nodes) %>%
     gather(key = "Nodes", value = "Influence", -nodes1) %>%
@@ -165,7 +168,10 @@ groupStrength <- function(topoFile, pathLength = 10, plotOut = F) {
           theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
                 axis.text.x = element_text(angle = 90), legend.position = "right",
                 legend.direction = "vertical", legend.key.height = unit(0.5, "in"))
-      ggsave(paste0("Influence/", str_replace(topoFile, ".topo", "_group.png")), width = 7, height = 6)
+
+      directoryNav("MatrixPlots")
+      ggsave(str_replace(topoFile, ".topo", "_group.png"), width = 7, height = 6)
+      setwd("..")
       return()
   }
 
@@ -188,7 +194,7 @@ groupStrength <- function(topoFile, pathLength = 10, plotOut = F) {
 }
 
 
-groupStrengthAll <- function(net) {
+GroupStrengthAll <- function(net) {
     wd <- getwd()
     topoFiles <- list.files(".", ".topo")
     df <- sapply(topoFiles, function(topoFile) {
@@ -197,10 +203,7 @@ groupStrengthAll <- function(net) {
         data.frame %>%
         set_names(c("G11", "G22", "G12", "G21", "Gs")) %>%
         mutate(Network = topoFiles %>% str_remove(".topo$"))
-    setwd(randcompiled)
-    if(!dir.exists(net))
-        dir.create(net)
-    setwd(net)
+    directoryNav("CompiledData")
     write_csv(df, paste0(net, "_GroupStrengths.csv"), quote = "none")
 }
 

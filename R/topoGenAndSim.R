@@ -106,13 +106,110 @@ EdgeDeletion <- function() {
 }
 
 
-SimulateBoolean <- function(rand = T, edge = T) {
+findMax <- function(topoDf, topoFile)
+{
+  topoOriginal <- list.files(".", ".topo")
+  net <- topoFile %>% str_remove(".topo")
+  topoDf <- read.delim(topoFile, sep = "")
+  GWT <- groupStrength(topoFile)[5]
+  GsChange <- sapply(1:nrow(topoDf), function(x){
+    df <- topoDf[-x, ]
+    topo <- paste0(net, "_", x, ".topo")
+    write_delim(df, topo, delim = " ", quote = "none")
+    G <- groupStrength(topo)[5]
+    GWT-G
+  })
+  n <- which.max(GsChange)
+  topoFile <- paste0(net, "_", n,".topo")
+  topoOriginal <- c(topoOriginal, topoFile)
+  topoFiles <- list.files(".", ".topo")
+  topoFiles <- topoFiles[-which(topoFiles %in% topoOriginal)]
+  sapply(topoFiles, file.remove)
+  return(topoFile)
+}
+
+
+Causation <- function() {
+    wd <- getwd()
+    setwd(topoFileFolder)
+    topoFiles <- list.files(".", pattern = ".topo")
+    topoDf <- lapply(topoFiles, read.delim(sep = " ")) %>% set_names(topoFiles)
+    sapply(topoFiles, function(topoFile) {
+        setwd(gsCausation)
+        net <- topoFile %>% str_remove(".topo")
+        directoryNav(net)
+        write_delim(topoDf[[topoFile]], "wild.topo", delim = " ", quote = "none")
+        topo <- "wild.topo"
+        sapply(1:20, function(i) {
+            topo <<- findMax(topo)
+        })
+    })
+
+    setwd("E:\\EMT_EXP\\Final_Results\\GsMultiPert")
+    if(!dir.exists(net))
+      dir.create(net)
+    file.copy(topoFile, ".")
+    topoFile <- paste0(net, ".topo")
+    file.copy(topoFile, net)
+    sapply(1:20, function(i)
+    {
+      topoFile <<- findMax(topoFile, net)
+    })
+    topoFiles <- list.files(".",".topo")
+    sapply(topoFiles,file.remove)
+    setwd("Influence")
+    filz <- list.files(".", ".csv")
+    sapply(filz, file.remove)
+    setwd(paste0("../", net))
+    topoFiles <- list.files(".", ".topo")
+    gs <- sapply(topoFiles, groupCalc) %>% t %>%
+      data.frame %>% set_names(c("G11", "G22", "G12", "G21", "Net")) %>%
+      mutate(across(c(G11, G12, G21, G22), as.numeric)) %>%
+      mutate(Gs = (abs(G11) + abs(G12) + abs(G21) + abs(G22))/4)
+    write.csv(gs, paste0(net, "_groups.csv"), row.names = F)
+    setwd("..")
+
+
+}
+
+simulation <- function() {
+  os <- .Platform$OS.type
+  script <- "script.jl"
+  if(os == "windows")
+      script <- "scriptWindows.jl"
+  file.copy(paste0(simPackage, "/", script), ".", overwrite = T)
+  if(os!= "windows") {
+      command <- "export JULIA_NUM_THREADS=4\njulia script.jl"
+      system(command)
+  }
+  else {
+      topoFiles <- list.files(".", ".topo$")
+      size <- floor(length(topoFiles)/numThreads)
+      topoList <- lapply(1:numThreads, function(x) {
+          k <- (x-1)*size
+          id <- 1:size + k
+          if (size + k > length(topoFiles))
+              id <- id[1]:(length(topoFiles))
+          topoFiles[id] %>% paste0(collapse = " ")
+      })
+      plan(multiprocess, workers = numThreads)
+      simulater <- future_lapply(topoList, function(x) {
+          command <- paste0("julia ", script, " ", x)
+          system(command)
+      })
+      future:::ClusterRegistry("stop")
+  }
+
+
+
+}
+
+SimulateBoolean <- function(rand = F, edge = F) {
   if (rand) {
     setwd(randRaw)
     sapply(netList, function(net) {
       setwd(net)
-      file.copy(paste0(simPackage, "/script.jl"), ".", overwrite = T)
-      julia_source("script.jl")
+      simulation()
       setwd("..")
     })
   }
@@ -121,9 +218,13 @@ SimulateBoolean <- function(rand = T, edge = T) {
     setwd(edgeDel)
     sapply(netList, function(net) {
       setwd(net)
-      file.copy(paste0(simPackage, "/script.jl"), ".", overwrite = T)
-      julia_source("script.jl")
+      simulation()
       setwd("..")
     })
+  }
+
+  if (!edge && !rand)
+  {
+    simulation()
   }
 }

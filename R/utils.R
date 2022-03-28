@@ -1,3 +1,9 @@
+directoryNav <- function(d) {
+    if(!dir.exists(d))
+        dir.create(d)
+    setwd(d)
+}
+
 bmCoeff <- function(vec)
 {
     vec <- na.omit(vec)
@@ -20,7 +26,7 @@ cfgAnalysis <- function(net)
         str_trim %>% str_replace_all(regex("\\W+"), "")
     topoDat <- cfgDat[(32+numNodes):length(cfgDat)] %>% str_split("\t") %>%
         reduce(rbind.data.frame) %>% set_names(c("ID", "S", "Tar", "Type")) %>%
-        mutate(Type = ifelse(Type == "2", -1, 1), S = as.integer(S), 
+        mutate(Type = ifelse(Type == "2", -1, 1), S = as.integer(S),
                Tar = as.integer(Tar))
     if (!file.exists(paste0(net, ".topo")))
     {
@@ -29,7 +35,7 @@ cfgAnalysis <- function(net)
             mutate(Type = ifelse(Type == -1, 2, 1))
         write_delim(topoDf, paste0(net, ".topo"), delim = " ", quote = "none")
     }
-    
+
     return(list(nodes, topoDat))
 }
 
@@ -47,39 +53,38 @@ discretize <- function(net)
     nodes <- ls[[1]]
     topoDat <- ls[[2]]
     solutionDf <- paste0(net, "_solution.dat") %>% read_delim(delim = "\t") %>%
-        set_names(c("ParIndex", "nStates", "Count", nodes)) %>% 
+        set_names(c("ParIndex", "nStates", "Count", nodes)) %>%
          mutate(Count = Count/max(Count)) %>%
         select(all_of(nodes), Count)
     dots <- lapply(nodes, as.symbol)
     states <- solutionDf %>% select(-Count) %>% sapply(function(x){
         y <- (x-mean(x))/sd(x)
         ifelse(y>0, 1, -1)
-    }) %>% data.frame %>% set_names(nodes) %>% mutate(Count = solutionDf$Count) %>% 
-        group_by(across(nodes)) %>% summarise(Frequency = sum(Count)) 
+    }) %>% data.frame %>% set_names(nodes) %>% mutate(Count = solutionDf$Count) %>%
+        group_by(across(nodes)) %>% summarise(Frequency = sum(Count))
     states$Frequency <- states$Frequency/sum(states$Frequency)
-    states$Frustration <- states %>% select(all_of(nodes)) %>% 
+    states$Frustration <- states %>% select(all_of(nodes)) %>%
                    apply(1, function(x){frustCalcRAC(x, topoDat)})
     statesDf <- states %>%
-        unite(State, all_of(nodes), sep = "") %>% 
+        unite(State, all_of(nodes), sep = "") %>%
         mutate(State = paste0("'",State %>% str_replace_all("-1", "0"),"'"))
     write_csv(statesDf, paste0(net, "_discreteStates.csv"), quote = "none")
     print(net)
 }
 
-getEMSONodes <- function(net)
+SecondarySignals <- function(topoDf, sig) {
+    targets <- topoDf %>% filter(Source == sig) %>%
+        select(Target) %>% unlist
+    secSigs <- c()
+
+}
+
+getEMSONodes <- function(topoFile)
 {
     wd <- getwd()
-    topoFile <- paste0(net, ".topo")
-    if (!file.exists(topoFile))
-    {
-        net1 <- str_remove(net, "_rand.*")
-        setwd(paste0(randRaw, "/", net1))
-    }
-    
-    
     ls <- topo_to_int_mat(topoFile)
     intMat <- ls[[1]]
-    nodes <- ls[[2]] %>% str_replace_all(regex("\\W+"), "")
+    nodes <- ls[[2]]
     colnames(intMat) <- rownames(intMat) <- nodes
     signal <- which(apply(intMat, 2, function(x){all(x==0)}))
     output <- which(apply(intMat, 1, function(x){all(x==0)}))
@@ -96,7 +101,7 @@ getEMSONodes <- function(net)
             F
     }))
     ls <- groupCalc1(topoFile)
-    groups <- ls[[1]] %>% unlist
+    groups <- ls %>% unlist
     sigs <- unique(nodes[c(signal, secondary_signal)])
     names(sigs) <- paste0("S", 1:length(sigs))
     outs <- unique(nodes[c(output, secondary_output)])
@@ -113,7 +118,7 @@ getEMSONodes <- function(net)
         if(n %in% outs)
             names(nodes)[x] <<- names(outs[outs == nodes[x]])
     })
-    
+
     setwd(wd)
     return(nodes)
 }
@@ -124,7 +129,7 @@ correlGrob <- function(df, x, y, xPos = NULL, yPos = NULL, method = "pearson")
     pVal <- ifelse(corr$p.value < 0.05, "*", "")
     xPos <- ifelse(!is.null(xPos), xPos, 0.5)
     yPos <- ifelse(!is.null(yPos), yPos, 0.9)
-    grob <- grobTree(textGrob(paste0("\u03c1 : ", round(corr$estimate, 2), pVal), 
+    grob <- grobTree(textGrob(paste0("\u03c1 : ", round(corr$estimate, 2), pVal),
                               x=xPos,  y=yPos, hjust=0,
                               gp=gpar(col="black", fontsize=18, fontface="bold")))
     return(grob)
@@ -153,7 +158,7 @@ multiFactorCorrelation <- function(df,x, y,z, label = T, method = "pearson")
             mutate(Factors = facts)
     }
     s
-    
+
 }
 
 multiFactorCorrelationAnova <- function(df,x, y,z, label = T, method = "pearson")
@@ -163,7 +168,7 @@ multiFactorCorrelationAnova <- function(df,x, y,z, label = T, method = "pearson"
         d <- df[df[[x]] == f, ] %>% select(z,y)
         d <- cor(d[[y]], d[[z]], method = method)
         d1 <- df %>% select(all_of(c(x,y,z))) %>% set_names(c("X", "Y", "Z"))
-        p <- 
+        p <-
         if(label)
             paste0("\u03c1: ",round(d$estimate,2), ifelse(d$p.value < 0.05, "*", ""))
         else
@@ -179,7 +184,7 @@ multiFactorCorrelationAnova <- function(df,x, y,z, label = T, method = "pearson"
             mutate(Factors = facts)
     }
     s
-    
+
 }
 
 
