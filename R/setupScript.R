@@ -1,12 +1,9 @@
 installed <- library()$results[, 1]
 packages <- c("tidyr", "readr", "magrittr", "ggplot2", "compiler", "dplyr", "JuliaCall", "xfun")
-packages <- packages[!(packages %in% installed)]
+toInstall <- packages[!(packages %in% installed)]
+sapply(toInstall, install.packages)
 
-library(tidyverse)
-library(compiler)
-library(ggrepel)
-library(grid)
-library(ggcorrplot)
+sapply(packages, library, character.only = T)
 options(stringsAsFactors = F, lazy = F)
 
 mainFolder <- readline(prompt = "Enter the path of the folder to save the data: ")
@@ -97,7 +94,7 @@ names(labelshorts) <- labelKeys
 
 setwd(topoFileFolder)
 netNameKey <- sapply(topoFiles, function(x) {
-  df <- read.delim(x, sep = "") %>%
+  df <- read.delim(x, sep = "", row.names = NULL) %>%
     mutate_if(is.character, str_replace_all, pattern = regex("\\W+"), replace = "")
   nodes <- unique(c(df$Source, df$Target)) %>% length()
   edges <- nrow(df)

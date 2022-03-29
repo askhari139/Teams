@@ -106,17 +106,19 @@ EdgeDeletion <- function() {
 }
 
 
-findMax <- function(topoDf, topoFile)
+findMax <- function(topoFile)
 {
   topoOriginal <- list.files(".", ".topo")
   net <- topoFile %>% str_remove(".topo")
   topoDf <- read.delim(topoFile, sep = "")
-  GWT <- groupStrength(topoFile)[5]
+  GWT <- GroupStrength(topoFile)[5]
+  if (is.null(GWT) || GWT == 0) # happens when all nodes are signal or output
+    return("Stop")
   GsChange <- sapply(1:nrow(topoDf), function(x){
     df <- topoDf[-x, ]
     topo <- paste0(net, "_", x, ".topo")
     write_delim(df, topo, delim = " ", quote = "none")
-    G <- groupStrength(topo)[5]
+    G <- GroupStrength(topo)[5]
     GWT-G
   })
   n <- which.max(GsChange)
@@ -133,42 +135,25 @@ Causation <- function() {
     wd <- getwd()
     setwd(topoFileFolder)
     topoFiles <- list.files(".", pattern = ".topo")
-    topoDf <- lapply(topoFiles, read.delim(sep = " ")) %>% set_names(topoFiles)
+    topoDf <- lapply(topoFiles, read.delim,sep = " ") %>% set_names(topoFiles)
     sapply(topoFiles, function(topoFile) {
         setwd(gsCausation)
         net <- topoFile %>% str_remove(".topo")
-        directoryNav(net)
+        DirectoryNav(net)
+        RemoveAllFiles()
         write_delim(topoDf[[topoFile]], "wild.topo", delim = " ", quote = "none")
         topo <- "wild.topo"
         sapply(1:20, function(i) {
+          # browser()
+            if (topo == "Stop")
+              return()
             topo <<- findMax(topo)
         })
+        setwd("Influence")
+        RemoveAllFiles()
+        setwd("..")
+        GroupStrengthAll(topoFile %>% str_remove(".topo$"))
     })
-
-    setwd("E:\\EMT_EXP\\Final_Results\\GsMultiPert")
-    if(!dir.exists(net))
-      dir.create(net)
-    file.copy(topoFile, ".")
-    topoFile <- paste0(net, ".topo")
-    file.copy(topoFile, net)
-    sapply(1:20, function(i)
-    {
-      topoFile <<- findMax(topoFile, net)
-    })
-    topoFiles <- list.files(".",".topo")
-    sapply(topoFiles,file.remove)
-    setwd("Influence")
-    filz <- list.files(".", ".csv")
-    sapply(filz, file.remove)
-    setwd(paste0("../", net))
-    topoFiles <- list.files(".", ".topo")
-    gs <- sapply(topoFiles, groupCalc) %>% t %>%
-      data.frame %>% set_names(c("G11", "G22", "G12", "G21", "Net")) %>%
-      mutate(across(c(G11, G12, G21, G22), as.numeric)) %>%
-      mutate(Gs = (abs(G11) + abs(G12) + abs(G21) + abs(G22))/4)
-    write.csv(gs, paste0(net, "_groups.csv"), row.names = F)
-    setwd("..")
-
 
 }
 

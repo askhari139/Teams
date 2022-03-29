@@ -1,4 +1,9 @@
-directoryNav <- function(d) {
+RemoveAllFiles <- function() {
+    filz <- list.files(".")
+    sapply(filz, file.remove)
+}
+
+DirectoryNav <- function(d) {
     if(!dir.exists(d))
         dir.create(d)
     setwd(d)

@@ -1,7 +1,6 @@
 correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T)
 {#browser()
     print(topoFile)
-    wd <- getwd()
     net <- str_remove(topoFile, ".topo")
     nodes <- readLines(topoFile %>% str_replace(".topo", "_nodes.txt"))
     corMat <- read_csv(topoFile %>% str_replace(".topo", "0_finFlagFreq.csv"),
@@ -35,17 +34,16 @@ correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T)
         if(!dir.exists("MatrixPlots"))
             dir.create("MatrixPlots")
         ggsave(paste0("MatrixPlots/", net, "_corMatPlot.png"), width = 7, height = 6)
-        setwd(wd)
         return()
     }
     if (writeOut) {
-        directoryNav("CorMats")
+        DirectoryNav("CorMats")
         write.csv(corMat %>% data.frame, paste0(net, "_corMat.csv"))
-        setwd(wd)
+        setwd("..")
         return()
     }
     if (matOut) {
-        setwd(wd)
+        setwd("..")
         return(corMat)
     }
 
@@ -55,15 +53,14 @@ correlationMatBool <- cmpfun(correlationMatBool)
 
 correlationMatrixRAC <- function(topoFile)
 {
-    setwd(paste0(RACIPE_WT, "/", net))
-    topoFile <- paste0(net, ".topo")
+    wd <- getwd()
+    net <- topoFile %>% str_remove(".topo$")
     nodes <- read.delim(paste0(net, ".prs")) %>%
         filter(str_detect(Parameter, "Prod")) %>%
         select(Parameter) %>% unlist %>% str_remove("Prod_of_")
     df <- read_delim(paste0(net, "_solution.dat"), delim = "\t", col_names = F) %>%
         set_names(c("ParIndex", "nStates", "Count", nodes)) %>%
         select(-ParIndex, -nStates, -Count)
-    setwd(cwd)
     corMat <- cor(df)
     nodes <- getEMSONodes(net)
     corDf <- corMat %>% data.frame %>% mutate(Nodes = rownames(.)) %>%
@@ -77,17 +74,18 @@ correlationMatrixRAC <- function(topoFile)
             theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
                   axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position = "right",
                   legend.direction = "vertical", legend.key.height = unit(0.5, "in"))
-        if (!dir.exists("MatrixPlots"))
-            dir.create("MatrixPlots")
-        ggsave(paste0("MatrixPlots/", net, "_corMatPlot.png"),
-               width = 7, height = 6)
+        DirectoryNav("MatrixPlots")
+        ggsave(paste0(net, "_corMatPlot.png"), width = 7, height = 6)
+        setwd("..")
     }
     if (writeOut) {
-        directoryNav("CorMats")
+        DirectoryNav("CorMats")
         write.csv(corMat %>% data.frame, paste0(net, "_corMat.csv"))
+        setwd("..")
         return()
     }
     if (matOut) {
+        setwd("..")
         return(corMat)
     }
 
@@ -112,6 +110,7 @@ correlInflDiff <- function() {
         sqrt(sum((inflMat - corMat)^2))/(2*length(corMat))
     })
     df <- data.frame(Network = topoFiles %>% str_remove(".topo"), Dist = dists)
-    directoryNav("CompiledData")
+    DirectoryNav("CompiledData")
     write.csv(df, paste0(net,"_correlInflDiff.csv"), row.names = F)
 }
+correlInflDiff <- cmpfun(correlInflDiff)
