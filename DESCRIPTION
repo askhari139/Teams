@@ -1,9 +1,9 @@
 Package: Teams
 Title: Perform teams related analysis
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Kishore", "Hari", , "kishorehari@iisc.ac.in", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = " 0000-0001-5655-9039 "))
 Description: Code used to perform the analysis and generate the figures in the paper: https://www.biorxiv.org/content/10.1101/2021.12.12.472090v1.full
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
@@ -17,4 +17,19 @@ Imports:
     ggplot2,
     compiler,
     readr,
-    dplyr
+    purrr,
+    JuliaCall,
+    xfun,
+    stringr,
+    future,
+    future.apply,
+    devtools
+Collate:
+    'setupScript.R'
+    'utils.R'
+    'topoGenAndSim.R'
+    'influenceAndGs.R'
+    'expressionCorrelation.R'
+    'stateLabeller.R'
+    'coherence.R'
+    'compileData.R'

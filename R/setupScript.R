@@ -1,8 +1,9 @@
 installed <- library()$results[, 1]
 packages <- c("tidyr", "readr", "magrittr", "ggplot2", "compiler", "dplyr",
-              "JuliaCall", "xfun", "stringr", "future", "future.apply", "purrr")
+              "JuliaCall", "xfun", "stringr", "future", "future.apply", "purrr",
+              "devtools")
 toInstall <- packages[!(packages %in% installed)]
-sapply(toInstall, install.packages)
+sapply(toInstall, install.packages, repos = "https://cloud.r-project.org/")
 
 if(!require(miscFuncs))
   devtools::install_github("askhari139/miscFuncs")
