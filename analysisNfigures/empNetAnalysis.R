@@ -1,5 +1,9 @@
 ### Load the package : devtools::install_github("askhari139/Teams)
 
+### Setup data folder structure
+SetupFunc(mainFolder = "D:/TeamsTest", topoFolder = "D:/TopoFiles", numThreads = 3)
+
+
 ### Random network Analysis ----
 
 # Generating random networks
