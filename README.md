@@ -52,7 +52,8 @@ while read requirement; do conda install --yes $requirement || pip install $requ
 * Codes like **UMAP_analysis** and **Bool.py** may take longer times. Just be patient and don't **Ctrl+C** it even if you have to wait for some time (_Just Don't do it. Time is precious_)
 
 ### Requirements
-Python(Tested on Version 3.8.5)
+R(Tested on Version 4.1.2)
+Julia(Tested on Version 1.6.2 & 1.4)
 
 
 
