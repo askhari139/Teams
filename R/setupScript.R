@@ -113,6 +113,7 @@ SetupFunc <- function(mainFolder, topoFolder, numThreads = 1) {
   phenKey <<- c(E = "Epithelial", H = "Hybrid", M = "Mesenchymal")
   mainFolder <<- mainFolder
   numThreads <<- numThreads
+  BmodelSetup()
 }
 
 
@@ -135,4 +136,3 @@ BmodelSetup <- function() {
   writeLines(script, "scriptWindows.jl")
   julia_source("dependencyInstaller.jl")
 }
-BmodelSetup()
