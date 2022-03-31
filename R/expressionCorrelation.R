@@ -1,6 +1,12 @@
-correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T)
+correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T, logDf = NULL)
 {#browser()
+    writeLog <- F
     print(topoFile)
+    if (is.null(logDf)) {
+        writeLog <- T
+        logDf <- read_csv("LogFile.csv", col_types = cols(), lazy = F)
+    }
+
     net <- str_remove(topoFile, ".topo")
     nodes <- readLines(topoFile %>% str_replace(".topo", "_nodes.txt"))
     corMat <- read_csv(topoFile %>% str_replace(".topo", "0_finFlagFreq.csv"),
@@ -34,14 +40,15 @@ correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T)
         if(!dir.exists("MatrixPlots"))
             dir.create("MatrixPlots")
         ggsave(paste0("MatrixPlots/", net, "_corMatPlot.png"), width = 7, height = 6)
-        return()
+        setwd("..")
+
     }
     if (writeOut) {
         DirectoryNav("CorMats")
         write.csv(corMat %>% data.frame, paste0(net, "_corMat.csv"))
         setwd("..")
-        return()
     }
+
     if (matOut) {
         setwd("..")
         return(corMat)

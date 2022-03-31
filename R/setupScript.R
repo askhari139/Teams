@@ -1,19 +1,17 @@
 installed <- library()$results[, 1]
-packages <- c("tidyr", "readr", "magrittr", "ggplot2", "compiler", "dplyr", "JuliaCall", "xfun")
+packages <- c("tidyr", "readr", "magrittr", "ggplot2", "compiler", "dplyr",
+              "JuliaCall", "xfun", "stringr", "future", "future.apply", "purrr")
 toInstall <- packages[!(packages %in% installed)]
 sapply(toInstall, install.packages)
 
 sapply(packages, library, character.only = T)
 options(stringsAsFactors = F, lazy = F)
 
-mainFolder <- readline(prompt = "Enter the path of the folder to save the data: ")
-topoFolder <- readline(prompt = "Enter the path of the folder that has the topofiles: ")
-numThreads <- readline(prompt = "Enter the number of threads available for simulation: ") %>% as.integer()
-if (is.na(numThreads)) {
-  numThreads <- 1
-}
+mainFolder <- readline("Path to the folder where results should be stored: ")
+topoFolder <- readline("Path to the folder that has the topo files to be analysed: ")
+numThreads <- readline("Number of threads available for simulations: ") %>% as.integer
 
-Sys.setenv(JULIA_NUM_THREADS = as.character(numThreads))
+# Sys.setenv(JULIA_NUM_THREADS = as.character(numThreads))
 
 ### Input files----
 topoFileFolder <- paste0(mainFolder, "/TopoFiles")
@@ -68,7 +66,7 @@ labelKeys <- c(
   "maxFrust", "minFrust", "meanFrust", "maxNetFrust", "minNetFrust",
   "meanNetFrust", "maxCoh", "minCoh", "meanCoh", "maxNetCoh", "minNetCoh",
   "meanNetCoh", "corFreqFrust", "pFreqFrust", "corFreqCoh", "pFreqCoh",
-  "corFrustCoh", "pFrustCoh"
+  "corFrustCoh", "pFrustCoh", "Gs", "bmSSF", "bmFrust", "bmCoh"
 )
 labelvals <- c(
   "Maximum Frustration", "Minimum Frustration", "Mean Frustration",
@@ -77,7 +75,9 @@ labelvals <- c(
   "Max Net Coherence", "Min Net Coherence", "Mean Net Coherence",
   "\u03c1 Frequency-frustration", "pVal Frequency-frustration",
   "\u03c1 Frequency-coherence", "pVal Frequency-coherence",
-  "\u03c1 Coherence-frustration", "pVal Coherence-frustration"
+  "\u03c1 Coherence-frustration", "pVal Coherence-frustration",
+  "Mean Team Strength", "SSF Bimodality Coefficient",
+  "Frustration Bimodality Coefficient", "Coherence Bimodality Coefficient"
 )
 names(labelvals) <- labelKeys
 
@@ -88,7 +88,8 @@ labelshorts <- c(
   "Max Net Coh", "Min Net Coh", "Mean Net Coh",
   "\u03c1 Freq-Frust", "pVal Freq-Frust",
   "\u03c1 Freq-Coh", "pVal Freq-Coh",
-  "\u03c1 Coh-Frust", "pVal Coh-Frust"
+  "\u03c1 Coh-Frust", "pVal Coh-Frust", "Team Strength", "SSF Bimodality",
+  "Frust Bimodality", "Coh Bimodality"
 )
 names(labelshorts) <- labelKeys
 
@@ -125,6 +126,10 @@ BmodelSetup <- function() {
   script <- readLines("script.jl")
   script[1] <- paste0("include(\"", simPackage, "/bmodel.jl\")")
   writeLines(script, "script.jl")
+
+  script <- readLines("scriptWindows.jl")
+  script[1] <- paste0("include(\"", simPackage, "/bmodel.jl\")")
+  writeLines(script, "scriptWindows.jl")
   julia_source("dependencyInstaller.jl")
 }
 BmodelSetup()

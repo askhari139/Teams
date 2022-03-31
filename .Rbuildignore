@@ -1,2 +1,3 @@
 ^Teams\.Rproj$
 ^\.Rproj\.user$
+^Teams\.analysisNfigures$   # All the codes needed to analyse topoFiles and generate figures

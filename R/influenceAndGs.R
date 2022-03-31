@@ -1,5 +1,11 @@
-TopoToIntMat <- function(topoFile, plotOut = F, nOrder = NULL) {
+TopoToIntMat <- function(topoFile, logDf = NULL, plotOut = F, nOrder = NULL) {
   print(topoFile)
+  writeLog <- F
+  if (is.null(logDf)){
+    writeLog <- T
+    logDf <- read_csv("LogFile.csv", col_types = cols(), lazy = F)
+  }
+
   df <- read.delim(topoFile, sep = " ", stringsAsFactors = F)
   df <- df %>%
     mutate(Type = ifelse(Type == 2, -1, 1))
@@ -43,8 +49,13 @@ TopoToIntMat <- function(topoFile, plotOut = F, nOrder = NULL) {
       ggsave(paste0(str_replace(topoFile, ".topo", "_interaction.png")),
              width = 7, height = 6)
       setwd("..")
-
+      logDf <- logDf %>% mutate(InteractionPlot = ifelse(Files == topoFile, "Yes", InteractionPlot))
   }
+  if(writeLog) {
+    write_csv(logDf, "LogFile.csv", quote = "none")
+  }
+  else
+    logDf <<- logDf
   return(list(intmat, nodes))
 }
 
@@ -61,6 +72,16 @@ ComputePowerMatrix <- function(mat, power) {
 ComputePowerMatrix <- cmpfun(ComputePowerMatrix)
 
 InfluenceMatrix <- function(net, intmat, nodes, lmax = 10, write = T) {
+
+  if (file.exists(paste0("Influence/", net, "_reducedInfl.csv"))) {
+    influence_reduced <- read_csv(paste0("Influence/", net, "_reducedInfl.csv"), col_types = cols())
+    rn <- influence_reduced[, 1] %>% unlist
+    influence_reduced <- influence_reduced[, -1] %>% as.matrix
+    rownames(influence_reduced) <- rn
+    return(influence_reduced)
+  }
+
+
   intmax <- intmat
   intmax[which(intmax == -1)] <- 1
   res <- 0
@@ -125,15 +146,29 @@ InfluenceMatrix <- function(net, intmat, nodes, lmax = 10, write = T) {
 InfluenceMatrix <- cmpfun(InfluenceMatrix)
 
 
-GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F) {
+GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F, logDf = NULL) {
+  writeLog <- F
   ls <- TopoToIntMat(topoFile)
   intmat <- ls[[1]]
   nodes <- ls[[2]]
   net <- topoFile %>% str_remove(".topo$")
+  if (is.null(logDf)) {
+    writeLog <- T
+    logDf <- read_csv("LogFile.csv", col_types = cols(), lazy = F)
+  }
 
   inflMat <- InfluenceMatrix(net, intmat, nodes, pathLength)
-  if (is.null(inflMat))
+  if (is.null(inflMat)) {
+    logDf <- logDf %>% mutate(Influence = ifelse(Files == topoFile, "Fail", Influence))
+    if(writeLog) {
+      write_csv(logDf, "LogFile.csv", quote = "none")
+    }
+    else
+      logDf <<- logDf
     return()
+  }
+  else
+    logDf <- logDf %>% mutate(Influence = ifelse(Files == topoFile, "Yes", Influence))
 
   nodes <- rownames(inflMat)
   df <- inflMat
@@ -158,7 +193,11 @@ GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F) 
     egroup <- which.max(mirdetect)
     mgroup <- ifelse(egroup == 1, 2, 1)
     names(l)[c(egroup, mgroup)] <- c("E", "M")
-    return(l)
+    l <- sapply(l, function(x) {
+      x %>% paste0(collapse = ",")
+    })
+    writeLines(l, paste0(net, ".teams"))
+    logDf <- logDf %>% mutate(TeamComposition = ifelse(Files == topoFile, "Yes", TeamComposition))
   }
   df2 <- data.frame(df) %>%
     mutate(nodes1 = nodes) %>%
@@ -174,8 +213,8 @@ GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F) 
 
       DirectoryNav("MatrixPlots")
       ggsave(str_replace(topoFile, ".topo", "_group.png"), width = 7, height = 6)
+      logDf <- logDf %>% mutate(InfluencePlot = ifelse(Files == topoFile, "Yes", InfluencePlot))
       setwd("..")
-      return()
   }
 
   g11 <- df[g1, g1] %>%
@@ -190,23 +229,37 @@ GroupStrength <- function(topoFile, pathLength = 10, plotOut = F, getTeams = F) 
   g21 <- df[g2, g1] %>%
     as.vector() %>%
     mean()
-  c(g11, g22, g12, g21) %>%
+  GAll <- c(g11, g22, g12, g21) %>%
     abs() %>%
     mean() %>%
       c(g11, g22, g12, g21, .)
+  logDf <- logDf %>% mutate(Gs = ifelse(Files == topoFile, "Yes", Gs))
+
+  if(writeLog) {
+    # print("wrote")
+    # print(logDf)
+    # print(getwd())
+      write_csv(logDf, "LogFile.csv", quote = "none")
+    }
+  else
+    logDf <<- logDf
+  return(GAll)
 }
 
 
 GroupStrengthAll <- function(net, plotOut = F) {
     wd <- getwd()
+    logDf <- read.csv("LogFile.csv")
     topoFiles <- list.files(".", ".topo")
     df <- sapply(topoFiles, function(topoFile) {
-        GroupStrength(topoFile, plotOut = plotOut)
+        g <- GroupStrength(topoFile, plotOut = plotOut, getTeams = T, logDf = NULL)
     }) %>% t %>%
         data.frame %>%
         set_names(c("G11", "G22", "G12", "G21", "Gs")) %>%
         mutate(Network = topoFiles %>% str_remove(".topo$"))
+    write_csv(logDf, "LogFile.csv", quote = "none")
     DirectoryNav("CompiledData")
-    write_csv(df, paste0(net, "_GroupStrengths.csv"), quote = "none")
+    write_csv(df, paste0(net, "_TeamStrengths.csv"), quote = "none")
+    setwd(wd)
 }
 

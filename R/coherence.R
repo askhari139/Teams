@@ -105,13 +105,13 @@ coherence <- function(topoFile, maxT = 1000, nNode = 1,
 {
     net <- topoFile %>% str_remove(".topo")
     nodeOrder <- readLines(paste0(net, "_nodes.txt"))
-    ls <- topo_to_int_mat(topoFile)
+    ls <- TopoToIntMat(topoFile)
     update_matrix <- ls[[1]]
     nodes <- ls[[2]]
     colnames(update_matrix) <- rownames(update_matrix) <- nodes
     update_matrix <- update_matrix[nodeOrder, nodeOrder]
     update_matrix <- 2*update_matrix + diag(length(nodes))
-
+    groupLabels <- readLines(str_replace(topoFile, ".topo", ".teams")) %>% str_split(",")
     statesDf <- read_csv(paste0(net, "_finFlagFreq.csv"), col_types = cols(), lazy = F) %>%
         filter(!is.na(Avg0), flag == 1)
     if (nrow(statesDf) == 0)
@@ -125,8 +125,8 @@ coherence <- function(topoFile, maxT = 1000, nNode = 1,
     df$flag <- as.integer(df$flag)
     df$nNode <- nNode
     df$Hamming <- df %>% select(init, fin) %>% apply(1, hamming)
-    df$initPhen <- df$init %>% labeller_states(topoFile = paste0(net, ".topo"))
-    df$finPhen <- df$fin %>% labeller_states(topoFile = paste0(net, ".topo"))
+    df$initPhen <- df$init %>% EMTScoreCalc(groupLabels, nodes) %>% LabellerPhen
+    df$finPhen <- df$fin %>% EMTScoreCalc(groupLabels, nodes) %>% LabellerPhen
     if (write) {
         directoryNav("CoherencesData")
         write_csv(df, paste0(net, "_", nNode, "R_coherence.csv"),
@@ -139,42 +139,47 @@ coherence <- function(topoFile, maxT = 1000, nNode = 1,
 
 coherence <- cmpfun(coherence)
 
-coherenceSingleNode <- function(net)
+CoherenceSingleNode <- function()
 {
-    topoFiles <- list.files(".", ".topo")
-    nets <- str_remove(topoFiles, ".topo")
-    # dir.create("dummy")
-    # setwd("dummy")
-    topoDone <- list.files(".", "_finFlagFreq") %>%
-        str_replace("_finFlagFreq.csv", ".topo")
-    setwd("..")
-    topoFiles <- topoFiles[!(topoFiles %in% topoDone)]
+    logDf <- read.csv("LogFile.csv")
+    topoFiles <- logDf %>% filter(Coherence == "No") %>% select(Files) %>% unlist
+    nets <- topoFiles %>% str_remove(".topo")
     plan(multisession, workers = numThreads)
     dummy <- future_lapply(nets, function(x){
         # browser()
-        df <- coherence(x, randChoice = F, nIter = 50, write = F)
-        df <- df[df$init == df$fin,]%>% mutate(states = init, coherence0 = Freq) %>%
-            # ungroup %>%
+        df <- coherence(paste0(x, ".topo"), randChoice = F, nIter = 50, write = F)
+        df <- df[df$init == df$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
             select(states, coherence0)
-        dfss <- read_csv(paste0(x, "_finFlagFreq.csv"), show_col_types = F, lazy=F)
-        df <- merge(df, dfss, by = "states", all = T)
-        write_csv(df, paste0(x, "_finFlagFreq.csv"), quote = "none")
+        coherenceVec<- df$coherence0
+        names(coherenceVec) <- df$states
+        df <- read_csv(paste0(x, "_finFlagFreq.csv"), show_col_types = F, lazy=F) %>%
+            mutate(coherence0 = coherenceVec[states])
+        write_csv(df, paste0(x, "_finFlagFreq.csv"), quote = "none", na = "")
+        logDf <<- logDf %>% mutate(Coherence = ifelse(Files == paste0(x, ".topo"), "Yes", Coherence))
     })
     future:::ClusterRegistry("stop")
+    write_csv(logDf, "LogFile.csv", quote = "none")
 }
-coherenceSingleNode <- cmpfun(coherenceSingleNode)
+CoherenceSingleNode <- cmpfun(CoherenceSingleNode)
 
 
 
-coherenceAllNode <- function(net, maxT = 1000, randChoice = T,
+CoherenceAllNode <- function(topoFile, logDf = NULL, maxT = 1000, randChoice = T,
                              nState = 100, nIter = 10, reps = 1)
 {
-    l <- readLines(paste0(dataDir, net, "_nodes.txt")) %>% length
+    writeLog <- F
+    if (is.null(logDf)) {
+        writeLog <- T
+        logDf <- read_csv("LogFile.csv", col_types = cols(), lazy = F)
+    }
+
+    net <- topoFile %>% str_remove(".topo")
+    l <- readLines(paste0(net, "_nodes.txt")) %>% length
     # browser()
     dfList <- lapply(1:reps, function(rep){
         plan(multisession, workers = numThreads)
-        df <- future_lapply(1:l, function(x){
-            coherence(net, maxT, x, randChoice, nState, nIter, write = F)
+        df <- lapply(1:l, function(x){
+            coherence(topoFile, maxT, x, randChoice, nState, nIter, write = F)
         }) %>% reduce(rbind.data.frame) %>% mutate(Rep = rep)
         future:::ClusterRegistry("stop")
         return(df)
@@ -183,9 +188,16 @@ coherenceAllNode <- function(net, maxT = 1000, randChoice = T,
         df <- dfList[[1]]
     else
         df <- dfList %>% reduce(rbind.data.frame)
-    directoryNav("Coherence")
+    DirectoryNav("PhenotypicTransition")
     write_csv(df, paste0(net, "_allNodeCoherence_nPert",
                          nState,"_nIter",nIter,"_reps", reps, ".csv"), quote = "none")
+    logDf <- logDf %>%
+        mutate(MultiNodeCoherence = ifelse(Files == paste0(x, ".topo"), "Yes", MultiNodeCoherence))
     setwd("..")
+    if(writeLog) {
+        write_csv(logDf, "LogFile.csv", quote = "none")
+    }
+    else
+        logDf <<- logDf
 }
-coherenceAllNode <- cmpfun(coherenceAllNode)
+CoherenceAllNode <- cmpfun(CoherenceAllNode)

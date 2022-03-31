@@ -14,8 +14,9 @@ UniquePerms2 <- function(x, max = 10, nSwap = 10) {
   nVec <- c(n1, 1)
   if (n1 > n2) nVec <- c(n2, 2)
   notOne <- ifelse(nVec[2] == 1, 2, 1)
-  if (max == 0) {
-    max <- factorial(N) / (factorial(n1) * factorial(n2))
+  maxNets <- factorial(N) / (factorial(n1) * factorial(n2))
+  if (max == 0 || max > maxNets) {
+    max <- maxNets
   }
   if (max > 500) {
     max <- 500
@@ -106,8 +107,7 @@ EdgeDeletion <- function() {
 }
 
 
-findMax <- function(topoFile)
-{
+findMax <- function(topoFile) {
   topoOriginal <- list.files(".", ".topo")
   net <- topoFile %>% str_remove(".topo")
   topoDf <- read.delim(topoFile, sep = "")
@@ -131,7 +131,7 @@ findMax <- function(topoFile)
 }
 
 
-Causation <- function() {
+CausationNetworks <- function(nMax = 20) {
     wd <- getwd()
     setwd(topoFileFolder)
     topoFiles <- list.files(".", pattern = ".topo")
@@ -143,7 +143,8 @@ Causation <- function() {
         RemoveAllFiles()
         write_delim(topoDf[[topoFile]], "wild.topo", delim = " ", quote = "none")
         topo <- "wild.topo"
-        sapply(1:20, function(i) {
+        LogFileGen()
+        sapply(1:nMax, function(i) {
           # browser()
             if (topo == "Stop")
               return()
@@ -152,9 +153,19 @@ Causation <- function() {
         setwd("Influence")
         RemoveAllFiles()
         setwd("..")
-        GroupStrengthAll(topoFile %>% str_remove(".topo$"))
     })
 
+}
+
+LogFileGen <- function() {
+  topoFiles <- list.files(".", ".topo")
+  df <- data.frame(Files = topoFiles, Influence = "No", Gs = "No",
+                   Coherence = "No", MultiNodeCoherence = "No",
+                   InfluencePlot = "No", Correlation = "No",
+                   CorrelationPlot = "No", Simulated = "No",
+                   TeamComposition = "No", Strength = "No",
+                   Scores = "No", InteractionPlot = "No")
+  write.csv(df, "LogFile.csv", row.names = F)
 }
 
 simulation <- function() {
@@ -164,7 +175,8 @@ simulation <- function() {
       script <- "scriptWindows.jl"
   file.copy(paste0(simPackage, "/", script), ".", overwrite = T)
   if(os!= "windows") {
-      command <- "export JULIA_NUM_THREADS=4\njulia script.jl"
+    Sys.setenv(JULIA_NUM_THREADS = as.character(numThreads))
+      command <- "julia script.jl"
       system(command)
   }
   else {
@@ -177,19 +189,22 @@ simulation <- function() {
               id <- id[1]:(length(topoFiles))
           topoFiles[id] %>% paste0(collapse = " ")
       })
-      plan(multiprocess, workers = numThreads)
+      Sys.setenv(JULIA_NUM_THREADS = as.character(1))
+      plan(multisession, workers = numThreads)
       simulater <- future_lapply(topoList, function(x) {
           command <- paste0("julia ", script, " ", x)
           system(command)
       })
       future:::ClusterRegistry("stop")
   }
-
-
+  logDf <- read.csv("LogFile.csv")
+  simulated <- list.files(".", "_finFlagFreq.csv") %>% str_replace("_finFlagFreq.csv", ".topo")
+  logDf$Simulated[logDf$Files %in% simulated] <- "Yes"
+  write.csv(logDf, "LogFile.csv", row.names = F)
 
 }
 
-SimulateBoolean <- function(rand = F, edge = F) {
+SimulateBoolean <- function(rand = F, edge = F, cause = F) {
   if (rand) {
     setwd(randRaw)
     sapply(netList, function(net) {
@@ -208,7 +223,16 @@ SimulateBoolean <- function(rand = F, edge = F) {
     })
   }
 
-  if (!edge && !rand)
+  if (cause) {
+    setwd(gsCausation)
+    sapply(netList, function(net) {
+      setwd(net)
+      simulation()
+      setwd("..")
+    })
+  }
+
+  if (!edge && !rand && !cause)
   {
     simulation()
   }

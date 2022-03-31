@@ -4,4 +4,4 @@ importFrom(magrittr, "%>%")
 importFrom(readr, read_csv)
 importFrom(compiler, cmpfun)
 importFrom(JuliaCall, julia_source)
-
+importFrom(purrr, reduce)
