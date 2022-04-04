@@ -9,7 +9,7 @@ correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T, 
 
     net <- str_remove(topoFile, ".topo")
     nodes <- readLines(topoFile %>% str_replace(".topo", "_nodes.txt"))
-    corMat <- read_csv(topoFile %>% str_replace(".topo", "0_finFlagFreq.csv"),
+    corMat <- read_csv(topoFile %>% str_replace(".topo", "_finFlagFreq.csv"),
                        show_col_types = F) %>%
         filter(flag == 1) %>% select(states, Avg0) %>% drop_na %>%
         mutate(Avg0 = Avg0*10000 %>% round) %>% apply(1, function(x){
