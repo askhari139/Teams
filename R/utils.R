@@ -149,7 +149,9 @@ getEMSONodes <- function(topoFile)
         else
             F
     }))
-    ls <- groupCalc1(topoFile)
+    ls <- readLines(str_replace(topoFile, ".topo", ".teams")) %>% str_split(",")
+    names(ls[[1]]) <- paste0("E", 1:length(ls[[1]]))
+    names(ls[[2]]) <- paste0("M", 1:length(ls[[2]]))
     groups <- ls %>% unlist
     sigs <- unique(nodes[c(signal, secondary_signal)])
     names(sigs) <- paste0("S", 1:length(sigs))

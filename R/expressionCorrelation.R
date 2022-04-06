@@ -7,6 +7,34 @@ correlationMatBool <- function(topoFile, matOut = F, plotOut = F, writeOut = T, 
         logDf <- read_csv("LogFile.csv", col_types = cols(), lazy = F)
     }
 
+    if (file.exists(paste0("CorMats/", net, "_corMat.csv"))) {
+        if (writeOut) {}
+        if(plotOut) {
+            corMat <- read.csv(paste0("CorMats/", net, "_corMat.csv"), row.names = 1) %>% as.matrix
+            nodes <- getEMSONodes(topoFile)
+            corDf <- corMat %>% data.frame %>% mutate(Nodes = rownames(.)) %>%
+                gather(key = "Nodes1", value = "Correlation", -Nodes) %>%
+                mutate(Nodes = factor(Nodes, levels = nodes),
+                       Nodes1 = factor(Nodes1, levels = nodes))
+
+            ggplot(corDf, aes(x = Nodes, y = Nodes1, fill = Correlation)) + geom_tile() +
+                theme_Publication() + scale_fill_gradient2(low = "blue", high = "red",
+                                                           limits = c(-1,1)) +
+                theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5), legend.position = "right",
+                      legend.direction = "vertical", legend.key.height = unit(0.5, "in"))
+            if(!dir.exists("MatrixPlots"))
+                dir.create("MatrixPlots")
+            ggsave(paste0("MatrixPlots/", net, "_corMatPlot.png"), width = 7, height = 6)
+            setwd("..")
+        }
+        if(matOut) {
+            corMat <- read.csv(paste0("CorMats/", net, "_corMat.csv"), row.names = 1) %>% as.matrix
+            return(corMat)
+        }
+        return()
+    }
+
     net <- str_remove(topoFile, ".topo")
     nodes <- readLines(topoFile %>% str_replace(".topo", "_nodes.txt"))
     corMat <- read_csv(topoFile %>% str_replace(".topo", "_finFlagFreq.csv"),
