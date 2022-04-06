@@ -131,7 +131,7 @@ SecondarySignals <- function(topoDf, sig) {
 getEMSONodes <- function(topoFile)
 {
     wd <- getwd()
-    ls <- topo_to_int_mat(topoFile)
+    ls <- TopoToIntMat(topoFile)
     intMat <- ls[[1]]
     nodes <- ls[[2]]
     colnames(intMat) <- rownames(intMat) <- nodes
