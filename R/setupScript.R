@@ -100,7 +100,8 @@ SetupFunc <- function(mainFolder, topoFolder, numThreads = 1) {
   setwd(topoFileFolder)
   netNameKey <<- sapply(topoFiles, function(x) {
     df <- read.delim(x, sep = "", row.names = NULL) %>%
-      mutate_if(is.character, str_replace_all, pattern = regex("\\W+"), replace = "")
+      mutate_if(is.character, str_replace_all, pattern = regex("\\W+"), replace = "") %>%
+      mutate_if(is.character, tolower)
     nodes <- unique(c(df$Source, df$Target)) %>% length()
     edges <- nrow(df)
     write_delim(df, x, delim = " ", quote = "none")
