@@ -147,6 +147,7 @@ CoherenceSingleNode <- function()
     plan(multisession, workers = numThreads)
     dummy <- future_lapply(nets, function(x){
         # browser()
+        logDf <- read_csv("LogFile.csv", lazy = F, col_types = cols())
         df <- coherence(paste0(x, ".topo"), randChoice = F, nIter = 50, write = F)
         df <- df[df$init == df$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
             select(states, coherence0)
@@ -155,7 +156,8 @@ CoherenceSingleNode <- function()
         df <- read_csv(paste0(x, "_finFlagFreq.csv"), show_col_types = F, lazy=F) %>%
             mutate(coherence0 = coherenceVec[states])
         write_csv(df, paste0(x, "_finFlagFreq.csv"), quote = "none", na = "")
-        logDf <<- logDf %>% mutate(Coherence = ifelse(Files == paste0(x, ".topo"), "Yes", Coherence))
+        logDf <- logDf %>% mutate(Coherence = ifelse(Files == paste0(x, ".topo"), "Yes", Coherence))
+        write_csv(logDf, "LogFile.csv", quote = "none")
     })
     future:::ClusterRegistry("stop")
     write_csv(logDf, "LogFile.csv", quote = "none")
