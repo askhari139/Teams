@@ -14,7 +14,7 @@ UniquePerms2 <- function(x, max = 10, nSwap = 10) {
   nVec <- c(n1, 1)
   if (n1 > n2) nVec <- c(n2, 2)
   notOne <- ifelse(nVec[2] == 1, 2, 1)
-  maxNets <- factorial(N) / (factorial(n1) * factorial(n2))
+  maxNets <- choose(N,n1)
   if (max == 0 || max > maxNets) {
     max <- maxNets
   }
