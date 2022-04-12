@@ -72,7 +72,7 @@ RandomNetworks <- function(numRand = 500, nSwap = 10) {
       y <- rand_orders[x, ]
       df1 <- cbind.data.frame(onetwo, y)
       colnames(df1) <- c("Source", "Target", "Type")
-      write_delim(df1, paste0(name, "_", x, ".topo"), delim = " ")
+      write_delim(df1, paste0(net, "_", x, ".topo"), delim = " ")
     })
     setwd("..")
   }
