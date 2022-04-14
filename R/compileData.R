@@ -17,14 +17,21 @@ AllDataFile <- function(net) {
         coh <- freqDf$coherence0
         if (is.null(coh)) {
             print(topoFile)
-            d <- coherence(topoFile, write = F)
-            d <- d[d$init == d$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
-                select(states, coherence0)
-            coherenceVec<- d$coherence0
-            names(coherenceVec) <- d$states
             freqDf <- read_csv(str_replace(topoFile, ".topo", "_finFlagFreq.csv"),
                            col_types = cols(), lazy = F)
+            d <- coherence(topoFile, write = F)
+            if (is.na(d)) {
+                freqDf$coherence0 <- NA
+            }
+            else {
+                d <- d[d$init == d$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
+                    select(states, coherence0)
+                coherenceVec<- d$coherence0
+                names(coherenceVec) <- d$states
+            
             freqDf$coherence0 <- coherenceVec[freqDf$states]
+            }
+            
             write_csv(freqDf, str_replace(topoFile, ".topo", "_finFlagFreq.csv"),
                 quote = "none", na = "")
             coh <- freqDf %>% filter(flag == 1) %>%
@@ -77,14 +84,21 @@ AllDataFileNoFlag <- function(net) {
         coh <- freqDf$coherence0
         if (is.null(coh)) {
             print(topoFile)
-            d <- coherence(topoFile, write = F)
-            d <- d[d$init == d$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
-                select(states, coherence0)
-            coherenceVec<- d$coherence0
-            names(coherenceVec) <- d$states
             freqDf <- read_csv(str_replace(topoFile, ".topo", "_finFlagFreq.csv"),
                            col_types = cols(), lazy = F)
+            d <- coherence(topoFile, write = F)
+            if (is.na(d)) {
+                freqDf$coherence0 <- NA
+            }
+            else {
+                d <- d[d$init == d$fin,] %>% mutate(states = init, coherence0 = Freq) %>%
+                    select(states, coherence0)
+                coherenceVec<- d$coherence0
+                names(coherenceVec) <- d$states
+            
             freqDf$coherence0 <- coherenceVec[freqDf$states]
+            }
+            
             write_csv(freqDf, str_replace(topoFile, ".topo", "_finFlagFreq.csv"),
                 quote = "none", na = "")
             coh <- freqDf %>% filter(flag == 1) %>%
