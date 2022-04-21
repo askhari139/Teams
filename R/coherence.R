@@ -125,8 +125,8 @@ coherence <- function(topoFile, maxT = 1000, nNode = 1,
     df$flag <- as.integer(df$flag)
     df$nNode <- nNode
     df$Hamming <- df %>% select(init, fin) %>% apply(1, hamming)
-    df$initPhen <- df$init %>% EMTScoreCalc(groupLabels, nodes) %>% LabellerPhen
-    df$finPhen <- df$fin %>% EMTScoreCalc(groupLabels, nodes) %>% LabellerPhen
+    df$initPhen <- df$init %>% EMTScoreCalc(groupLabels, nodeOrder) %>% LabellerPhen
+    df$finPhen <- df$fin %>% EMTScoreCalc(groupLabels, nodeOrder) %>% LabellerPhen
     if (write) {
         directoryNav("CoherencesData")
         write_csv(df, paste0(net, "_", nNode, "R_coherence.csv"),
