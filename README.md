@@ -21,7 +21,7 @@ A brief description of the analysis:
 
 **5.** Calculate State strength, EMT score for all states of each network and attach phenotype labels for each of the states. 
 
-
+<!---
 ### Figures
 All the figures presented in the paper including Supplementary Figures (apart from the Schematics and Network Representation) are provided in the [``Figures``](https://github.com/csbBSSE/CSB-SCLC/tree/master/Figures) folder. Details of reproducing the figures are briefly given in the in the ``README`` file in each folder containing the subfigures.
 
@@ -50,6 +50,7 @@ while read requirement; do conda install --yes $requirement || pip install $requ
 * Some of the codes have an option of running processes in Parallel. Just make sure that you don't give spawn more processes than your CPUs can handle.
 * Installing Python packages using **Conda** would be preferable. Using **Intel Python Distribution** gives significant speed boosts in some of the codes.
 * Codes like **UMAP_analysis** and **Bool.py** may take longer times. Just be patient and don't **Ctrl+C** it even if you have to wait for some time (_Just Don't do it. Time is precious_)
+-->
 
 ### Requirements
 R(Tested on Version 4.1.2)
