@@ -19,7 +19,9 @@ A brief description of the analysis:
 
 **5.** Calculate coherence of all steady states, as well as multi-node perturbation coherence.
 
-**5.** Calculate State strength, EMT score for all states of each network and attach phenotype labels for each of the states. 
+**6.** Calculate State strength, EMT score for all states of each network and attach phenotype labels for each of the states. 
+
+*** The files generated using these codes are available on the google drive [here](https://drive.google.com/drive/folders/1bkVEQ7Wn4shB-kd8sfW_WKs-XeNZs_Vu?usp=sharing).
 
 <!---
 ### Figures
