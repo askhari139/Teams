@@ -405,7 +405,8 @@ CoherenceAllNode <- cmpfun(CoherenceAllNode)
 #' @export
 #'
 #' @examples
-coherenceSignal <- function(net, topoFile = "wild.topo") {
+coherenceNodeWise <- function(net, topoFile = "wild.topo",
+                              signal = F) {
     setwd(paste0(randRaw, "/", net))
     topoDf <- read.delim(topoFile, sep = "")
     nodes <- readLines(str_replace(topoFile, ".topo", "_nodes.txt"))
@@ -443,11 +444,21 @@ coherenceSignal <- function(net, topoFile = "wild.topo") {
         s1 <- s[-length(s)] %>% as.numeric
         s <- ifelse(s1 == 0,-1, 1)
         names(s) <- nodes
-        stateList <- sapply(signals, function(i) {
-            s1 <- s
-            s1[i] <- -1 * s1[i]
-            s1
-        })
+        if (signal) {
+            stateList <- sapply(signals, function(i) {
+                s1 <- s
+                s1[i] <- -1 * s1[i]
+                s1
+            })
+        }
+        else {
+            stateList <- sapply(nodes, function(i) {
+                s1 <- s
+                s1[i] <- -1 * s1[i]
+                s1
+            })
+        }
+
         d <-
             coherenceIter(s, update_matrix, stateList1 = stateList) %>%
             mutate(
@@ -460,23 +471,38 @@ coherenceSignal <- function(net, topoFile = "wild.topo") {
 
         d$signal <-
             nodes[d %>% select(initState, init) %>% apply(1, diffPos) - 1]
-        d <- d %>% select(initState, fin) %>% apply(1, function(x) {
-            n <- nodes[stateCompare(x)]
-            epi <- sum(eNodes %in% n) / length(eNodes)
-            mes <- sum(mNodes %in% n) / length(mNodes)
-            c(epi, mes)
-        }) %>% t %>% data.frame %>% set_names(c("Epithelial", "Mesenchymal")) %>%
-            cbind.data.frame(d, .) %>%
-            select(initState,
-                   initPhen,
-                   signal,
-                   Freq,
-                   Epithelial,
-                   Mesenchymal)
+        if (signal) {
+            d <- d %>% select(initState, fin) %>% apply(1, function(x) {
+                n <- nodes[stateCompare(x)]
+                epi <- sum(eNodes %in% n) / length(eNodes)
+                mes <- sum(mNodes %in% n) / length(mNodes)
+                c(epi, mes)
+            }) %>% t %>% data.frame %>% set_names(c("Epithelial", "Mesenchymal")) %>%
+                cbind.data.frame(d, .) %>%
+                select(initState,
+                       initPhen,
+                       signal,
+                       Freq,
+                       Epithelial,
+                       Mesenchymal)
+        }
+        else {
+            d <- d %>% filter(initState == fin) %>%
+                select(initState,
+                       initPhen,
+                       signal,
+                       Freq)
+        }
         d
+
     }) %>% reduce(rbind.data.frame)
     DirectoryNav("signalCoherence")
+    if (signal)
     write_csv(df,
               str_replace(topoFile, ".topo", "_signalCoherence.csv"),
               quote = "none")
+    else
+        write_csv(df,
+                  str_replace(topoFile, ".topo", "_nodeWiseCoherence.csv"),
+                  quote = "none")
 }
