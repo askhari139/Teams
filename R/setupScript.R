@@ -23,7 +23,7 @@ if (!require(funcsKishore))
 packages <- c(packages, "funcsKishore")
 
 sapply(packages, library, character.only = T)
-options(stringsAsFactors = F, lazy = F)
+options(lazy = F, stringsAsFactors = F)
 
 
 # Sys.setenv(JULIA_NUM_THREADS = as.character(numThreads))

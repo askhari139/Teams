@@ -407,6 +407,7 @@ CoherenceAllNode <- cmpfun(CoherenceAllNode)
 #' @examples
 coherenceNodeWise <- function(net, topoFile = "wild.topo",
                               signal = F) {
+    wd <- getwd()
     setwd(paste0(randRaw, "/", net))
     topoDf <- read.delim(topoFile, sep = "")
     nodes <- readLines(str_replace(topoFile, ".topo", "_nodes.txt"))
@@ -505,4 +506,5 @@ coherenceNodeWise <- function(net, topoFile = "wild.topo",
         write_csv(df,
                   str_replace(topoFile, ".topo", "_nodeWiseCoherence.csv"),
                   quote = "none")
+    setwd(wd)
 }
