@@ -1,6 +1,6 @@
 ## Landscape of Epithelial Mesenchymal Plasticity as an emergent property of coordinated teams in regulatory networks
 
-This resource provides the R code required for all the data simulations and analysis done in [**Landscape of Epithelial Mesenchymal Plasticity as an emergent property of coordinated teams in regulatory networks**](https://www.biorxiv.org/content/10.1101/2021.12.12.472090v2)
+This resource provides the R code required for all the data simulations and analysis done in [**Landscape of Epithelial Mesenchymal Plasticity as an emergent property of coordinated teams in regulatory networks**](https://www.biorxiv.org/content/10.1101/2021.12.12.472090v2). The raw data and processed data generated in the analysis can be found at <https://drive.google.com/drive/folders/1bkVEQ7Wn4shB-kd8sfW_WKs-XeNZs_Vu?usp=sharing>. The folder structure can be understood by studying the setupScript.R file. 
 
 The simulation tools used are as follows:
 
