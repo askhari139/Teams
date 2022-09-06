@@ -261,7 +261,6 @@ matrixPlot <- function(net,
         # scale_y_reverse()+
         labs(x = "", title = netNameKey[net])
     setwd(plotFolder)
-    # DirectoryNav("StateMatrix")
     w1 <- 2 + length(nodes) * 0.25
     if (!is.null(w))
         w1 <- w
@@ -318,3 +317,89 @@ signalCoherencePlot <- function(net,
            height = h)
     
 }
+
+coherenceHeatmaps <- function(net)
+{#browser()
+    setwd(plotFolder)
+    if(!dir.exists("coherencePlots"))
+        dir.create("coherencePlots")
+    setwd("coherencePlots")
+    freqFile <- paste0(randRaw, "/", net, "/", net, "_finFlagFreq.csv")
+    multiCohFile <- paste0(WTcoherence, "/", net, "_coherence.csv")
+    nodeCohFile <- paste0(randcompiled, "/", net, "_NodeStateCoherence.csv")
+    dfFreq <- read.csv(freqFile)
+    dfCoh <- read.csv(multiCohFile)
+    dfSingleCoh <- read.csv(nodeCohFile)
+    
+    
+    rownames(dfCoh) <- dfCoh$X
+    colnames(dfCoh) <- colnames(dfCoh) %>% str_remove("X") %>% str_remove_all("\\.")
+    dfCoh <- dfCoh[, -1] %>% t %>% data.frame %>% mutate(states = rownames(.))
+    dfCoh$states <- paste0("'", dfCoh$states, "'")
+    df <- merge(dfCoh, dfFreq, by = "states", all.x = T) %>%
+        select(-contains("Avg"), -flag, -contains("frust"), -contains("SD"), -Strength, -Partial,
+               -Epithelial, -Mesenchymal, -EMTScore, -coherence0)
+    df$phenotype <- paste0(df$phenotype, 1:nrow(df))
+    
+    dfGat <- df %>% gather(key = "nPert", value = "Coherence", -states, -phenotype)
+    dfGat$nPert <- dfGat$nPert %>% str_remove("X") %>% as.numeric
+    dfGat$nPert <- dfGat$nPert/22
+    # dfGat$Phenotype <- paste0(dfGat$phenotype, 1:nrow(dfGat))
+    
+    ggplot(dfGat, aes(x = nPert, y = phenotype, 
+                      fill = Coherence)) + geom_tile() +
+        scale_fill_viridis_c(limits = c(0,1)) + theme_Publication() +
+        scale_x_continuous(expand=c(0,0)) + 
+        scale_y_discrete(expand=c(0,0)) + 
+        theme(legend.position = "right", legend.direction = "vertical",
+              legend.key.height = unit(1, "cm"), 
+              legend.key.width = unit(0.6,"cm"),
+              legend.title = element_text(hjust = 0.5),
+              panel.background = element_blank(), 
+              plot.background = element_blank(), panel.grid = element_blank(), 
+              axis.text.y = element_blank()) +
+        labs(x = "Level of Perturbation", y = "", fill = "Mean\nCoherence")
+    ggsave(paste0(net, "_coherenceMultiNode.png"), width = 6.5, height = 5)
+    
+    
+    
+    dfCoh <- read.csv(nodeCohFile)
+    rownames(dfCoh) <- dfCoh$X
+    colnames(dfCoh) <- colnames(dfCoh) %>% str_remove("X") %>% str_remove_all("\\.")
+    dfCoh <- dfCoh[, -1] %>% t %>% data.frame %>% mutate(states = rownames(.))
+    dfCoh$states <- paste0("'", dfCoh$states, "'")
+    df <- merge(dfCoh, dfFreq, by = "states", all.x = T) %>%
+        select(-contains("Avg"), -flag, -contains("frust"), -contains("SD"), 
+               -Score, -Partial,
+               -Epithelial, -Mesenchymal)
+    df$phenotype <- paste0(df$phenotype, 1:nrow(df))
+    
+    dfGat <- df %>% gather(key = "Nodes", value = "Coherence", -states, -phenotype) %>%
+        mutate(Nodes = Nodes %>% str_replace_all(regex("\\W+"), ""))
+    
+    setwd(paste0(randRaw, "/", net))
+    l <- groupCalc1(paste0(net, ".topo"))
+    nodesC <- l[[1]] %>% unlist
+    nodes <- dfGat$Nodes %>% unique
+    nodesS <- nodes[!(nodes %in% nodesC)]
+    setwd(cwd)
+    dfGat$Nodes <- dfGat$Nodes %>% factor(levels = c(nodesC, nodesS))
+    ggplot(dfGat, aes(x = Nodes, y = phenotype, 
+                      fill = Coherence)) + geom_tile() +
+        scale_fill_viridis_c(limits = c(0,1)) + theme_Publication() +
+        scale_x_discrete(expand=c(0,0)) + 
+        scale_y_discrete(expand=c(0,0)) + 
+        theme(legend.position = "right", legend.direction = "vertical",
+              legend.key.height = unit(1, "cm"), 
+              legend.key.width = unit(0.6,"cm"),
+              legend.title = element_text(hjust = 0.5),
+              panel.background = element_blank(), 
+              plot.background = element_blank(), panel.grid = element_blank(), 
+              axis.text.y = element_blank(), 
+              axis.text.x = element_text(angle = 90, hjust = 1, size = rel(0.6))) +
+        labs(x = "", y = "", fill = "Mean\nCoherence")
+    ggsave(paste0(net, "_coherenceSingleNode.png"), width = 6.5, height = 5)
+    
+    print(net)
+}
+
