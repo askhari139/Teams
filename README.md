@@ -21,7 +21,7 @@ A brief description of the analysis:
 
 **6.** Calculate State strength, EMT score for all states of each network and attach phenotype labels for each of the states. 
 
-*** The files generated using these codes are available on the google drive [here](https://drive.google.com/drive/folders/1bkVEQ7Wn4shB-kd8sfW_WKs-XeNZs_Vu?usp=sharing).
+*** The files generated using these codes are available on the dryad [here](https://doi.org/10.5061/dryad.ncjsxksz7).
 
 <!---
 ### Figures
